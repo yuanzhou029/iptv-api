@@ -27,56 +27,31 @@ jobs:
           mkdir -p ./output
           echo "This is result $(date)" > ./output/result.txt
           echo "Another file content" > ./output/result.m3u
-          echo "Generated files:"
           ls -l ./output
 
       - name: Validate Files
         run: |
-          if [ ! -d "./output" ]; then
-            echo "❌ Error: output directory missing"
-            exit 1
-          fi
-
           required_files=("result.txt" "result.m3u")
           for file in "${required_files[@]}"; do
             if [ ! -f "./output/$file" ]; then
-              echo "❌ Error: $file not found in output directory"
+              echo "❌ Error: $file not found"
               exit 1
             fi
           done
-          echo "✅ All required files verified"
+          echo "✅ All files verified"
 
-      - name: Cleanup Old Files
+      - name: Upload Files
         run: |
-          echo "Removing old files from R2..."
-          aws s3 rm s3://zhou/result.txt \
-            --endpoint-url="$R2_ENDPOINT" \
-            --quiet || echo "No existing file to delete"
-
-          aws s3 rm s3://zhou/result.m3u \
-            --endpoint-url="$R2_ENDPOINT" \
-            --quiet || echo "No existing file to delete"
-
-      - name: Upload New Files
-        run: |
-          echo "Starting upload to R2..."
-          aws s3 cp ./output/result.txt s3://zhou/ \
+          aws s3 cp ./output/ s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
             --region auto \
-            --retries 5 \
-            --retry-delay 2
-
-          aws s3 cp ./output/result.m3u s3://zhou/ \
-            --endpoint-url="$R2_ENDPOINT" \
-            --region auto \
-            --retries 3 \
-            --retry-delay 1
-
-          echo "✅ Upload completed successfully"
+            --recursive \
+            --exclude "*" \
+            --include "result.*" \
+            --retries 5
 
       - name: Verify Upload
         run: |
-          echo "Listing R2 bucket contents:"
           aws s3 ls s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
             --human-readable
