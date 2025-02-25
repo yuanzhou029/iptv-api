@@ -1,10 +1,10 @@
 name: Sync to Cloudflare R2
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:  # 允许手动触发
   push:
     branches:
-      - main  # 你可以根据需要修改为其他分支
+      - main  # 选项：你可以根据需要修改为其他分支（可选）
 
 jobs:
   sync:
@@ -16,7 +16,7 @@ jobs:
 
       - name: Install AWS CLI
         run: |
-          curl "https://d1wnqr9m8t2p4p.cloudfront.net/awscli-exe-linux-x86_64.zip" -O
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -O
           unzip awscli-exe-linux-x86_64.zip
           sudo ./aws/install
 
@@ -30,4 +30,3 @@ jobs:
       - name: Sync result.txt to R2
         run: |
           aws s3 cp result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read
-
