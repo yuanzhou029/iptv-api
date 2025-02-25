@@ -1,10 +1,10 @@
 name: Sync to Cloudflare R2
 
 on:
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
   push:
     branches:
-      - main  # 选项：你可以根据需要修改为其他分支（可选）
+      - main
 
 jobs:
   sync:
@@ -16,10 +16,9 @@ jobs:
 
       - name: Generate output files
         run: |
-          # 生成示例文件，这里可能是您生成文件的实际步骤
           mkdir -p output
           echo "This is a test result." > output/result.txt
-          echo "#EXTM3U" > output/result.m3u  # 创建一个 M3U 文件的示例内容
+          echo "#EXTM3U" > output/result.m3u
 
       - name: Check if result.txt exists
         run: |
@@ -53,12 +52,12 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
           aws configure set default.region auto
-          aws configure set default.s3.endpoint_url https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com  # 请替换为您的账户 ID
+          aws configure set default.s3.endpoint_url https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com
 
       - name: Sync result.txt to R2
         run: |
-          aws s3 cp output/result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read
+          aws s3 cp output/result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read --endpoint-url https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com
 
       - name: Sync result.m3u to R2
         run: |
-          aws s3 cp output/result.m3u s3://${{ secrets.R2_BUCKET }}/iptv.m3u --acl public-read
+          aws s3 cp output/result.m3u s3://${{ secrets.R2_BUCKET }}/iptv.m3u --acl public-read --endpoint-url https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com
