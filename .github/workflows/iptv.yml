@@ -19,7 +19,8 @@ jobs:
 
       - name: Setup AWS CLI
         run: |
-          sudo pip install --upgrade awscli
+          sudo pip uninstall awscli -y  # 先移除旧版
+          sudo pip install awscli --upgrade  # 安装最新版
           aws --version
 
       - name: Generate Sample Files
