@@ -20,7 +20,7 @@ jobs:
           echo "工作目录结构:"
           ls -lR ./output  # 显示目录结构
           [ -f ./output/result.txt ] || { echo "❌ Error: result.txt 不存在"; exit 1; }
-          [ -f ./another_file.txt ] || { echo "❌ Error: another_file.txt 不存在"; exit 1; }
+          [ -f ./output/result.m3u ] || { echo "❌ Error: result.m3u 不存在"; exit 1; }
 
       - name: Upload files to R2
         env:
@@ -39,8 +39,8 @@ jobs:
             --region auto \         # 明确指定区域
             --no-progress           # 减少日志输出
 
-          # 上传 another_file.txt（带重试）
-          aws s3 cp ./another_file.txt s3://zhou/ \
+          # 上传 result.m3u（带重试）
+          aws s3 cp ./output/result.m3u s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
             --retries 5 \
             --retry-delay 2 \
