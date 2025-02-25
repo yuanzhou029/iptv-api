@@ -1,48 +1,82 @@
-name: Sync to Cloudflare R2
+name: Sync Files to Cloudflare R2
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
 
+env:
+  R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
 jobs:
-  upload:
+  upload-files:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-      - name: Install AWS CLI
+      - name: Setup AWS CLI
         run: |
-          sudo pip uninstall -y awscli  # 确保卸载旧版本
-          sudo pip install --upgrade awscli  # 强制安装最新版
+          sudo pip install --upgrade awscli
+          aws --version
 
-      - name: Validate file existence
+      - name: Generate Sample Files
         run: |
-          echo "工作目录结构:"
-          ls -lR ./output  # 显示目录结构
-          [ -f ./output/result.txt ] || { echo "❌ Error: result.txt 不存在"; exit 1; }
-          [ -f ./output/result.m3u ] || { echo "❌ Error: result.m3u 不存在"; exit 1; }
+          mkdir -p ./output
+          echo "This is result $(date)" > ./output/result.txt
+          echo "Another file content" > ./output/result.m3u
+          echo "Generated files:"
+          ls -l ./output
 
-      - name: Upload files to R2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      - name: Validate Files
         run: |
-          # 删除文件（仅需 endpoint-url）
-          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || echo "⚠️ 文件不存在（可忽略）"
+          if [ ! -d "./output" ]; then
+            echo "❌ Error: output directory missing"
+            exit 1
+          fi
 
-          # 上传 result.txt（带重试）
+          required_files=("result.txt" "result.m3u")
+          for file in "${required_files[@]}"; do
+            if [ ! -f "./output/$file" ]; then
+              echo "❌ Error: $file not found in output directory"
+              exit 1
+            fi
+          done
+          echo "✅ All required files verified"
+
+      - name: Cleanup Old Files
+        run: |
+          echo "Removing old files from R2..."
+          aws s3 rm s3://zhou/result.txt \
+            --endpoint-url="$R2_ENDPOINT" \
+            --quiet || echo "No existing file to delete"
+
+          aws s3 rm s3://zhou/result.m3u \
+            --endpoint-url="$R2_ENDPOINT" \
+            --quiet || echo "No existing file to delete"
+
+      - name: Upload New Files
+        run: |
+          echo "Starting upload to R2..."
           aws s3 cp ./output/result.txt s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
-            --retries 5 \          # 仅 cp 命令支持
-            --retry-delay 2 \       # 重试间隔 2 秒
-            --region auto \         # 明确指定区域
-            --no-progress           # 减少日志输出
+            --region auto \
+            --retries 5 \
+            --retry-delay 2
 
-          # 上传 result.m3u（带重试）
           aws s3 cp ./output/result.m3u s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
-            --retries 5 \
-            --retry-delay 2 \
             --region auto \
-            --no-progress
+            --retries 3 \
+            --retry-delay 1
+
+          echo "✅ Upload completed successfully"
+
+      - name: Verify Upload
+        run: |
+          echo "Listing R2 bucket contents:"
+          aws s3 ls s3://zhou/ \
+            --endpoint-url="$R2_ENDPOINT" \
+            --human-readable
