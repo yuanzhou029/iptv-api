@@ -14,6 +14,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Generate output files
+        run: |
+          # 生成示例文件，这里可能是您生成文件的实际步骤
+          mkdir -p output
+          echo "This is a test result." > output/result.txt
+          echo "#EXTM3U" > output/result.m3u  # 创建一个 M3U 文件的示例内容
+
+      - name: Check if result.txt exists
+        run: |
+          if [ ! -f output/result.txt ]; then
+            echo "output/result.txt does not exist!"
+            exit 1
+          fi
+
+      - name: Check if result.m3u exists
+        run: |
+          if [ ! -f output/result.m3u ]; then
+            echo "output/result.m3u does not exist!"
+            exit 1
+          fi
+
       - name: Uninstall existing AWS CLI (if any)
         run: |
           if command -v aws &> /dev/null; then
@@ -32,8 +53,12 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
           aws configure set default.region auto
-          aws configure set default.s3.endpoint_url https://your-account-id.r2.cloudflarestorage.com  # 用实际的账户ID替换
+          aws configure set default.s3.endpoint_url https://your-account-id.r2.cloudflarestorage.com  # 请替换为您的账户 ID
 
       - name: Sync result.txt to R2
         run: |
-          aws s3 cp result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read
+          aws s3 cp output/result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read
+
+      - name: Sync result.m3u to R2
+        run: |
+          aws s3 cp output/result.m3u s3://${{ secrets.R2_BUCKET }}/iptv.m3u --acl public-read
