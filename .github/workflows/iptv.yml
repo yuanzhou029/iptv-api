@@ -14,11 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install AWS CLI
+      - name: Install or update AWS CLI
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -O
           unzip awscli-exe-linux-x86_64.zip
-          sudo ./aws/install
+          sudo ./aws/install --update
 
       - name: Configure AWS CLI for R2
         run: |
