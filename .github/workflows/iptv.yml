@@ -28,8 +28,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          # 删除旧文件（无重试参数）
-          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || echo "⚠️ 文件不存在或删除失败（可忽略）"
+          # 删除文件（仅需 endpoint-url）
+          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || echo "⚠️ 文件不存在（可忽略）"
 
           # 上传 result.txt（带重试）
           aws s3 cp ./output/result.txt s3://zhou/ \
