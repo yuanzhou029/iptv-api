@@ -3,29 +3,46 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Install AWS CLI
-        run: sudo pip install --upgrade awscli
+        run: |
+          sudo pip uninstall -y awscli  # 确保卸载旧版本
+          sudo pip install --upgrade awscli  # 强制安装最新版
+
+      - name: Validate file existence
+        run: |
+          echo "工作目录结构:"
+          ls -lR ./output  # 显示目录结构
+          [ -f ./output/result.txt ] || { echo "❌ Error: result.txt 不存在"; exit 1; }
+          [ -f ./another_file.txt ] || { echo "❌ Error: another_file.txt 不存在"; exit 1; }
+
       - name: Upload files to R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          # 先删除旧文件（可选）
-          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || true
-          # 上传新文件（带重试）
+          # 删除旧文件（无重试参数）
+          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || echo "⚠️ 文件不存在或删除失败（可忽略）"
+
+          # 上传 result.txt（带重试）
           aws s3 cp ./output/result.txt s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
-            --retries 5 \
-            --retry-delay 2 \
-            --region auto
+            --retries 5 \          # 仅 cp 命令支持
+            --retry-delay 2 \       # 重试间隔 2 秒
+            --region auto \         # 明确指定区域
+            --no-progress           # 减少日志输出
+
+          # 上传 another_file.txt（带重试）
           aws s3 cp ./another_file.txt s3://zhou/ \
             --endpoint-url="$R2_ENDPOINT" \
             --retries 5 \
             --retry-delay 2 \
-            --region auto
+            --region auto \
+            --no-progress
