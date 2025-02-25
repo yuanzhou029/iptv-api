@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-		
+
       - name: Clean existing installations
         run: |
          sudo apt remove awscli -y || true  # 忽略未安装的情况
