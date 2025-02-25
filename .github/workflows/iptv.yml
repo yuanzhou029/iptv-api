@@ -16,12 +16,19 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+		
+      - name: Clean existing installations
+        run: |
+         sudo apt remove awscli -y || true  # 忽略未安装的情况
+         sudo pip uninstall awscli -y || true
+         sudo rm -rf /usr/local/aws-cli
+         sudo rm -f /usr/local/bin/aws
 
-      - name: Setup AWS CLI
+      - name: Install AWS CLI v2 with update
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
-          sudo ./aws/install
+          sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
           aws --version
 
       - name: Generate Sample Files
