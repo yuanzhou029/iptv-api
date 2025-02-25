@@ -3,21 +3,29 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
-
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install AWS CLI
+        run: sudo pip install --upgrade awscli
       - name: Upload files to R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          # 调试：列出存储桶内容（确认权限）
-          aws s3 ls s3://zhou/ --endpoint-url="$R2_ENDPOINT"
-          
-          # 上传文件
-          aws s3 cp ./output/result.txt s3://zhou/ --endpoint-url="$R2_ENDPOINT"
-          aws s3 cp ./another_file.txt s3://zhou/ --endpoint-url="$R2_ENDPOINT"
+          # 先删除旧文件（可选）
+          aws s3 rm s3://zhou/result.txt --endpoint-url="$R2_ENDPOINT" || true
+          # 上传新文件（带重试）
+          aws s3 cp ./output/result.txt s3://zhou/ \
+            --endpoint-url="$R2_ENDPOINT" \
+            --retries 5 \
+            --retry-delay 2 \
+            --region auto
+          aws s3 cp ./another_file.txt s3://zhou/ \
+            --endpoint-url="$R2_ENDPOINT" \
+            --retries 5 \
+            --retry-delay 2 \
+            --region auto
