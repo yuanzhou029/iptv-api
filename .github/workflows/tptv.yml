@@ -1,1 +1,33 @@
+name: Sync to Cloudflare R2
+
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - main  # 你可以根据需要修改为其他分支
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://d1wnqr9m8t2p4p.cloudfront.net/awscli-exe-linux-x86_64.zip" -O
+          unzip awscli-exe-linux-x86_64.zip
+          sudo ./aws/install
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set default.region auto
+          aws configure set default.s3.endpoint_url https://<YOUR_ACCOUNT_ID>.r2.cloudflarestorage.com
+
+      - name: Sync result.txt to R2
+        run: |
+          aws s3 cp result.txt s3://${{ secrets.R2_BUCKET }}/iptv.txt --acl public-read
 
