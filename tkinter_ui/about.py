@@ -26,12 +26,12 @@ class AboutUI:
         author_label = tk.Label(author_row_column1, text="作者:")
         author_label.pack()
         author_name = tk.Label(
-            author_row_column2, text="Govin", fg="blue", cursor="hand2"
+            author_row_column2, text="仗剑天涯", fg="blue", cursor="hand2"
         )
         author_name.pack()
         author_name.bind(
             "<Button-1>",
-            lambda e: webbrowser.open_new_tab("https://github.com/Guovin"),
+            lambda e: webbrowser.open_new_tab("https://blog.51281868.xyz"),
         )
 
         project_row = tk.Frame(about_window)
@@ -69,7 +69,7 @@ class AboutUI:
         image_label.pack()
 
         appreciate_label = tk.Label(
-            about_window, text="开发维护不易，请我喝杯咖啡☕️吧~"
+            about_window, text="此项目是由Guovin开发特此说明，项目地址：https://github.com/Guovin/iptv-api"
         )
         appreciate_label.pack()
 
