@@ -14,7 +14,7 @@ jobs:
       - name: Checkout iptv-api repo
         uses: actions/checkout@v3
         with:
-          repository: yuanzhou029/iptv-api  # 替换为你的 GitHub 仓库
+          repository: yuanzhou029/iptv-api
           path: iptv-api
 
       - name: Install rclone
@@ -42,4 +42,5 @@ jobs:
 
       - name: Upload result.txt to R2
         run: |
-          rclone copy iptv-api/output/result.txt r2:zhou/  # 替换为你的 R2 存储桶名称
+          rclone copy iptv-api/output/result.txt r2:zhou/
+          rclone copy iptv-api/output/result.m3u r2:zhou/
