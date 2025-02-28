@@ -14,7 +14,7 @@ jobs:
       - name: Checkout iptv-api repo
         uses: actions/checkout@v3
         with:
-          repository: your-username/iptv-api  # 替换为你的 GitHub 仓库
+          repository: yuanzhou029/iptv-api  # 替换为你的 GitHub 仓库
           path: iptv-api
 
       - name: Install rclone
