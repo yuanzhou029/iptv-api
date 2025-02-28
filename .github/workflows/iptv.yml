@@ -6,7 +6,7 @@ on:
     branches:
       - master  # 当 master 分支有 push 时触发
     paths:
-      - '**'
+      - 'output/result.txt'
 
 jobs:
   sync:
