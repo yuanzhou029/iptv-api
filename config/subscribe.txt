@@ -20,3 +20,6 @@ https://raw.githubusercontent.com/Rivens7/Livelist/refs/heads/main/CNTV.m3u
 https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u
 https://raw.githubusercontent.com/fanmingming/live/refs/heads/main/tv/m3u/index.m3u
 https://raw.githubusercontent.com/fanmingming/live/refs/heads/main/tv/m3u/itv.m3u
+https://raw.githubusercontent.com/wwb521/live/main/tv.m3u
+http://tv.iill.top/m3u/Live
+http://epg.51zmt.top:8000/api/diyp/?ch={name}&date={date}
