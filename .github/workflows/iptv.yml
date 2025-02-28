@@ -31,7 +31,7 @@ jobs:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          RCLONE_CONFIG_R2_ENDPOINT: https://<your-account-id>.r2.cloudflarestorage.com  # 替换为你的 R2 endpoint
+          RCLONE_CONFIG_R2_ENDPOINT: https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com 
         run: |
           mkdir -p ~/.config/rclone
           echo "[r2]" > ~/.config/rclone/rclone.conf
@@ -42,4 +42,4 @@ jobs:
 
       - name: Upload result.txt to R2
         run: |
-          rclone copy iptv-api/output/result.txt r2:<your-r2-bucket-name>/  # 替换为你的 R2 存储桶名称
+          rclone copy iptv-api/output/result.txt r2:zhou/  # 替换为你的 R2 存储桶名称
