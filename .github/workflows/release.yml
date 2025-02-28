@@ -1,4 +1,4 @@
-name: Release
+name: iptv-api-exe
 on:
   workflow_dispatch:
 
