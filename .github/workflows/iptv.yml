@@ -2,9 +2,11 @@ name: Sync to Cloudflare R2
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 7 * * *'  # 每天 UTC 时间 7:00（北京时间 15:00）
-    - cron: '0 19 * * *' # 每天 UTC 时间 19:00（北京时间 03:00）
+  push:
+    branches:
+      - master  # 当 master 分支有 push 时触发
+    paths:
+      - '**'
 
 jobs:
   sync:
