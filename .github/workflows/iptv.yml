@@ -1,65 +1,45 @@
-name: Sync Files to Cloudflare R2
+name: Sync to Cloudflare R2
+
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-
-env:
-  R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  schedule:
+    - cron: '0 7 * * *'  # 每天 UTC 时间 7:00（北京时间 15:00）
+    - cron: '0 19 * * *' # 每天 UTC 时间 19:00（北京时间 03:00）
 
 jobs:
-  upload-files:
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+
     steps:
-      - name: Checkout Code
+      - name: Checkout iptv-api repo
         uses: actions/checkout@v3
+        with:
+          repository: your-username/iptv-api  # 替换为你的 GitHub 仓库
+          path: iptv-api
 
-      - name: Clean existing installations
+      - name: Install rclone
         run: |
-         sudo apt remove awscli -y || true  # 忽略未安装的情况
-         sudo pip uninstall awscli -y || true
-         sudo rm -rf /usr/local/aws-cli
-         sudo rm -f /usr/local/bin/aws
+          curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip rclone-current-linux-amd64.zip
+          cd rclone-*-linux-amd64
+          sudo cp rclone /usr/local/bin/
+          sudo chown root:root /usr/local/bin/rclone
+          sudo chmod 755 /usr/local/bin/rclone
 
-      - name: Install AWS CLI v2 with update
+      - name: Configure rclone for Cloudflare R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://<your-account-id>.r2.cloudflarestorage.com  # 替换为你的 R2 endpoint
         run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-          aws --version
+          mkdir -p ~/.config/rclone
+          echo "[r2]" > ~/.config/rclone/rclone.conf
+          echo "type = $RCLONE_CONFIG_R2_TYPE" >> ~/.config/rclone/rclone.conf
+          echo "access_key_id = $RCLONE_CONFIG_R2_ACCESS_KEY_ID" >> ~/.config/rclone/rclone.conf
+          echo "secret_access_key = $RCLONE_CONFIG_R2_SECRET_ACCESS_KEY" >> ~/.config/rclone/rclone.conf
+          echo "endpoint = $RCLONE_CONFIG_R2_ENDPOINT" >> ~/.config/rclone/rclone.conf
 
-      - name: Generate Sample Files
+      - name: Upload result.txt to R2
         run: |
-          mkdir -p ./output
-          echo "This is result $(date)" > ./output/result.txt
-          echo "Another file content" > ./output/result.m3u
-          ls -l ./output
-
-      - name: Validate Files
-        run: |
-          required_files=("result.txt" "result.m3u")
-          for file in "${required_files[@]}"; do
-            if [ ! -f "./output/$file" ]; then
-              echo "❌ Error: $file not found"
-              exit 1
-            fi
-          done
-          echo "✅ All files verified"
-
-      - name: Upload Files
-        run: |
-          aws s3 cp ./output/ s3://zhou/ \
-            --endpoint-url="$R2_ENDPOINT" \
-            --region auto \
-            --recursive \
-            --exclude "*" \
-            --include "result.*" \
-
-      - name: Verify Upload
-        run: |
-          aws s3 ls s3://zhou/ \
-            --endpoint-url="$R2_ENDPOINT" \
-            --human-readable
+          rclone copy iptv-api/output/result.txt r2:<your-r2-bucket-name>/  # 替换为你的 R2 存储桶名称
