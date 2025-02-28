@@ -2,7 +2,7 @@ name: 'Update schedule'
 
 on:
   schedule:
-    - cron: '0 22,10 * * *'
+    - cron: '0 10 * * *'  # 每天 UTC 时间 10:00（北京时间 18:00）触发
   workflow_dispatch:
     branches:
       - master
