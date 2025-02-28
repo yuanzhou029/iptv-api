@@ -1,7 +1,7 @@
 name: Sync to Cloudflare R2
 
 on:
-  workflow_dispatch:
+  #workflow_dispatch:
   push:
     branches:
       - master  # 当 master 分支有 push 时触发
