@@ -1,0 +1,36 @@
+name: Cleanup
+
+on:
+  schedule:
+    # 每三天运行一次
+    - cron: '0 0 */3 * *'
+
+  # 添加手动触发
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 步骤 1: 清理运行记录
+      - name: Delete old workflow runs
+        uses: rokroskar/workflow-run-cleanup-action@v1.0.0
+        with:
+          retain_days: 1 # 保留最近 1 天的运行记录
+          keep_minimum_runs: 5 # 至少保留 5 次运行记录
+          dry_run: false # 设置为 true 可以测试而不实际删除
+
+      # 步骤 2: 清理缓存
+      - name: Clear GitHub Actions cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache
+          key: ${{ runner.os }}-cache-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-cache-
+        if: always() # 即使前面的步骤失败也会执行
+
+      # 步骤 3: 打印清理完成信息
+      - name: Print cleanup completion
+        run: echo "Cleanup completed successfully!"
