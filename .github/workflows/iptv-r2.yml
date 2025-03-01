@@ -1,0 +1,157 @@
+name: 'Update and Sync to Cloudflare R2'
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # 每天 UTC 时间 10:00（北京时间 18:00）触发
+  workflow_dispatch:
+    branches:
+      - master
+      - dev
+      - gd
+
+jobs:
+  update_and_sync:
+    runs-on: ${{ matrix.operating-system }}
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        operating-system: [ 'ubuntu-20.04' ]
+    steps:
+      # 设置分支名称
+      - name: Set branch name
+        id: vars
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'yuanzhou029' && 'master' || 'gd' }}" >> $GITHUB_ENV
+
+      # 检出代码
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+
+      # 设置 Python 环境
+      - name: Run with setup-python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          update-environment: true
+          cache: 'pipenv'
+
+      # 检查 open_driver 配置
+      - name: Check open_driver config
+        id: check_driver
+        run: |
+          echo "OPEN_DRIVER=$(python -c '
+          try:
+            from utils.config import config
+            open_driver = config.open_driver
+          except:
+            open_driver = False
+          print(open_driver)')" >> $GITHUB_ENV
+
+      # 设置 Chrome
+      - name: Set up Chrome
+        if: env.OPEN_DRIVER == 'True'
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+
+      # 下载 Chrome 驱动
+      - name: Download chrome driver
+        if: env.OPEN_DRIVER == 'True'
+        uses: nanasess/setup-chromedriver@master
+
+      # 安装 FFmpeg
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      # 安装 pipenv
+      - name: Install pipenv
+        run: pip3 install --user pipenv
+
+      # 安装依赖
+      - name: Install dependencies
+        run: pipenv --python 3.13 && pipenv install --deploy
+
+      # 安装 Selenium
+      - name: Install selenium
+        if: env.OPEN_DRIVER == 'True'
+        run: pipenv install selenium
+
+      # 更新操作
+      - name: Update
+        run: pipenv run dev
+
+      # 提交并推送更改
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git diff
+          final_file=$(python -c '
+          try: 
+            from utils.config import config
+            final_file = config.final_file
+          except: 
+            final_file = "output/result.txt"
+          print(final_file)')
+          final_m3u_file=$(python -c '
+          try: 
+            from utils.config import config
+            import os
+            final_file = config.final_file
+            final_m3u_file = os.path.splitext(final_file)[0] + ".m3u"
+          except: 
+            final_m3u_file = "output/result.m3u"
+          print(final_m3u_file)')
+          if [[ -f "$final_file" ]]; then
+            git add -f "$final_file"
+          fi
+          if [[ -f "$final_m3u_file" ]]; then
+            git add -f "$final_m3u_file"
+          fi
+          if [[ -f "output/cache.pkl" ]]; then
+            git add -f "output/cache.pkl"
+          fi
+          if [[ -f "output/sort.log" ]]; then
+            git add -f "output/sort.log"
+          fi
+          if [[ -f "updates/fofa/fofa_hotel_region_result.pkl" ]]; then
+            git add -f "updates/fofa/fofa_hotel_region_result.pkl"
+          fi
+          if [[ -f "updates/fofa/fofa_multicast_region_result.pkl" ]]; then
+            git add -f "updates/fofa/fofa_multicast_region_result.pkl"
+          fi
+          if ! git diff --staged --quiet; then
+            git commit -m "Github Action Auto Updated"
+            git push --force
+          fi
+
+      # 安装 rclone
+      - name: Install rclone
+        run: |
+          curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip rclone-current-linux-amd64.zip
+          cd rclone-*-linux-amd64
+          sudo cp rclone /usr/local/bin/
+          sudo chown root:root /usr/local/bin/rclone
+          sudo chmod 755 /usr/local/bin/rclone
+
+      # 配置 rclone for Cloudflare R2
+      - name: Configure rclone for Cloudflare R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://fdfc48442676ca0e6b49dcef9d73afec.r2.cloudflarestorage.com 
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "[r2]" > ~/.config/rclone/rclone.conf
+          echo "type = $RCLONE_CONFIG_R2_TYPE" >> ~/.config/rclone/rclone.conf
+          echo "access_key_id = $RCLONE_CONFIG_R2_ACCESS_KEY_ID" >> ~/.config/rclone/rclone.conf
+          echo "secret_access_key = $RCLONE_CONFIG_R2_SECRET_ACCESS_KEY" >> ~/.config/rclone/rclone.conf
+          echo "endpoint = $RCLONE_CONFIG_R2_ENDPOINT" >> ~/.config/rclone/rclone.conf
+
+      # 上传 result.txt 和 result.m3u 到 Cloudflare R2
+      - name: Upload result files to R2
+        run: |
+          rclone copy output/result.txt r2:zhou/
+          rclone copy output/result.m3u r2:zhou/
