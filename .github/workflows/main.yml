@@ -1,13 +1,13 @@
 name: 'Update -iptv-'
-
+#
 on:
   schedule:
-    - cron: '0 10 * * *'  # 每天 UTC 时间 10:00（北京时间 18:00）触发
+    #- cron: '0 10 * * *'  # 每天 UTC 时间 10:00（北京时间 18:00）触发
   workflow_dispatch:
-    branches:
-      - master
-      - dev
-      - gd
+   # branches:
+    #  - master
+    #  - dev
+    #  - gd
 jobs:
   push:
     runs-on: ${{ matrix.operating-system }}
