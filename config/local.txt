@@ -2,3 +2,4 @@
 # 支持设置白名单：接口后添加$!
 # The local source list, one line per source, format: channel name, interface address
 # Support setting whitelist: add $! after the interface
+测试画面,http://47.108.223.71/live/5b561c85437d.m3u8$
